@@ -1,5 +1,7 @@
 # Padel Manager
 
+Repositorio: [github.com/pedrocarramolino/padelmanager](https://github.com/pedrocarramolino/padelmanager)
+
 App Flutter (web/PWA + Android) para gestionar los partidos, jugadores y pagos de un grupo de pádel: quién juega, en qué club y pista, quién ha pagado y quién no.
 
 ## Funcionalidades
