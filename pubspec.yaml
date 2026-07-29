@@ -1,0 +1,70 @@
+name: padel_manager
+
+description: "Aplicación para gestionar partidos de pádel."
+
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
+
+  # Iconos iOS
+  cupertino_icons: ^1.0.8
+
+  # Firebase
+  firebase_core: ^4.12.1
+  firebase_auth: ^6.5.6
+  cloud_firestore: ^6.7.1
+  firebase_storage: ^13.4.5
+  firebase_messaging: ^16.4.3
+
+  # Inicio de sesión con Google
+  google_sign_in: ^6.2.1
+  google_fonts: ^6.3.0
+  flutter_svg: ^2.2.1
+
+  # Estado y navegación
+  flutter_riverpod: ^2.6.1
+  go_router: ^14.6.2
+
+  # Imágenes de perfil
+  image_picker: ^1.1.2
+
+  # Localización
+  geolocator: ^14.0.2
+
+  # HTTP
+  http: ^1.5.0
+
+  # Utilidades
+  uuid: ^4.5.1
+  intl: ^0.19.0
+  shared_preferences: ^2.3.4
+
+  # Aviso local de partido (Android/iOS, sin servidor)
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.9.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  web:
+    generate: true
+  image_path: "assets/icon.png"
+
+flutter:
+  uses-material-design: true

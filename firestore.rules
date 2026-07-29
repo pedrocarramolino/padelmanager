@@ -1,0 +1,54 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Perfiles de usuario. El rol nunca se puede cambiar desde el cliente:
+    // se asigna 'user' al crearse y solo se cambia desde la consola/Admin SDK.
+    match /users/{userId} {
+      allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
+      allow create: if signedIn() &&
+        request.auth.uid == userId &&
+        request.resource.data.role == 'user';
+      allow update: if signedIn() &&
+        (request.auth.uid == userId || isAdmin()) &&
+        request.resource.data.role == resource.data.role;
+      allow delete: if isAdmin();
+    }
+
+    // Jugadores: visibles para cualquier usuario autenticado.
+    // Cada usuario gestiona su propia ficha (players/{uid}); el admin, todas.
+    match /players/{playerId} {
+      allow read: if signedIn();
+      allow create: if isAdmin() || (signedIn() && request.auth.uid == playerId);
+      allow update: if isAdmin() || (signedIn() && request.auth.uid == playerId);
+      allow delete: if isAdmin();
+    }
+
+    // Partidos: lectura para autenticados, gestión solo admin.
+    match /matches/{matchId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Clubes: lectura para autenticados, gestión solo admin.
+    match /clubs/{clubId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Todo lo demás, denegado.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

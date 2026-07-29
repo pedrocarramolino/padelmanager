@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base href="$FLUTTER_BASE_HREF">
+
+    <meta charset="UTF-8">
+    <!-- Flutter Web viewport -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <title>Padel Manager</title>
+    <meta name="description" content="Organiza tus partidos de pádel fácilmente.">
+    <!-- Android -->
+    <meta name="theme-color" content="#0B3D2E">
+    <meta name="mobile-web-app-capable" content="yes">
+    <!-- Apple -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Padel Manager">
+    <link rel="apple-touch-icon" href="icons/Icon-192.png">
+    <!-- Icono navegador -->
+    <link rel="icon" type="image/png" href="favicon.png">
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+  </head>
+  <body>
+    <div id="loading">
+      <img src="icons/Icon-512.png" alt="Padel Manager">
+      <h1>Padel Manager</h1>
+      <div class="loader"></div>
+    </div>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        min-height: 100%;
+        background: #0B3D2E;
+        font-family: Arial, sans-serif;
+      }
+      #loading {
+        width: 100%;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        color: white;
+      }
+      #loading img {
+        width: 150px;
+        margin-bottom: 30px;
+      }
+      #loading h1 {
+        margin: 0;
+        font-size: 34px;
+        font-weight: bold;
+        letter-spacing: 1px;
+      }
+      .loader {
+        margin-top: 35px;
+        width: 55px;
+        height: 55px;
+        border: 5px solid rgba(255, 255, 255, .25);
+        border-top: 5px solid #A7FF3F;
+        border-radius: 50%;
+        animation: spin .9s linear infinite;
+      }
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+    <script src="flutter_bootstrap.js" async></script>
+  </body>
+</html>
