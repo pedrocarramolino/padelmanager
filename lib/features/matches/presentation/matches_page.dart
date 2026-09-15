@@ -55,17 +55,17 @@ class MatchesPage extends ConsumerWidget {
                 );
               }
 
-              // Los partidos con todos los jugadores pagados desaparecen
-              // de la lista: ya no hay nada que gestionar en ellos.
+              // Un partido con todos los pagos completados solo deja de
+              // tener sentido en la lista cuando YA se ha jugado; uno
+              // próximo se sigue mostrando aunque esté todo pagado,
+              // porque el partido en sí todavía no ha pasado.
               bool isFullyPaid(MatchModel m) =>
                   m.players.isNotEmpty &&
                   m.players.every((p) => m.payments[p['id']] ?? false);
 
               final upcomingRaw = upcomingSnapshot.data!;
               final playedRaw = playedSnapshot.data!;
-              final upcoming = upcomingRaw
-                  .where((m) => !isFullyPaid(m))
-                  .toList();
+              final upcoming = upcomingRaw;
 
               // Los partidos jugados pendientes de pago se muestran
               // siempre todos; si no queda ninguno, se enseñan los
@@ -368,13 +368,13 @@ class _EmptyMatches extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             const Text(
-              'No hay partidos pendientes',
+              'No hay partidos',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             Text(
-              'Los partidos con todos los pagos completados desaparecen '
-              'de la lista. Crea un partido para empezar.',
+              'Crea tu primer partido y empieza a gestionar pagos y '
+              'jugadores.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
