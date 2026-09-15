@@ -102,10 +102,9 @@ class _OfflineBannerState extends ConsumerState<_OfflineBanner> {
       }
     });
 
-    if (!_visible) return const SizedBox.shrink();
-
     final colorScheme = Theme.of(context).colorScheme;
-    return Material(
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
+    final banner = Material(
       color: colorScheme.errorContainer,
       child: SafeArea(
         bottom: false,
@@ -132,6 +131,25 @@ class _OfflineBannerState extends ConsumerState<_OfflineBanner> {
             ],
           ),
         ),
+      ),
+    );
+
+    if (reduceMotion) {
+      return _visible ? banner : const SizedBox.shrink();
+    }
+
+    // El aviso "se materializa": crece y aparece a la vez, en vez de
+    // saltar de golpe. Misma curva de entrada y salida para que el
+    // camino de vuelta se sienta simétrico al de llegada.
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        opacity: _visible ? 1 : 0,
+        child: _visible ? banner : const SizedBox(width: double.infinity),
       ),
     );
   }

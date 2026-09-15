@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/date_format.dart';
@@ -17,6 +18,9 @@ class MatchDetailPage extends ConsumerWidget {
   ) async {
     final payments = Map<String, bool>.from(match.payments);
     payments[playerId] = !(payments[playerId] ?? false);
+    // El haptic dispara en el mismo gesto que el cambio visual, para
+    // que se sientan como una sola cosa (causalidad + armonía).
+    HapticFeedback.selectionClick();
     await ref.read(matchRepositoryProvider).updatePayments(match.id, payments);
   }
 
@@ -176,12 +180,19 @@ class MatchDetailPage extends ConsumerWidget {
                       const SizedBox(height: 14),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(20),
-                        child: LinearProgressIndicator(
-                          value: progress,
-                          minHeight: 10,
-                          valueColor:
-                              AlwaysStoppedAnimation(colorScheme.primary),
-                          backgroundColor: colorScheme.surfaceContainerHighest,
+                        child: TweenAnimationBuilder<double>(
+                          duration: const Duration(milliseconds: 350),
+                          curve: Curves.easeOutCubic,
+                          tween: Tween(begin: progress, end: progress),
+                          builder: (context, value, _) =>
+                              LinearProgressIndicator(
+                            value: value,
+                            minHeight: 10,
+                            valueColor:
+                                AlwaysStoppedAnimation(colorScheme.primary),
+                            backgroundColor:
+                                colorScheme.surfaceContainerHighest,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -238,19 +249,28 @@ class MatchDetailPage extends ConsumerWidget {
                         ),
                         child: Row(
                           children: [
-                            CircleAvatar(
-                              radius: 20,
-                              backgroundColor: isPaid
-                                  ? colorScheme.primaryContainer
-                                  : colorScheme.surfaceContainerHighest,
-                              child: Text(
-                                initials,
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeOutCubic,
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isPaid
+                                    ? colorScheme.primaryContainer
+                                    : colorScheme.surfaceContainerHighest,
+                              ),
+                              alignment: Alignment.center,
+                              child: AnimatedDefaultTextStyle(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeOutCubic,
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: isPaid
                                       ? colorScheme.onPrimaryContainer
                                       : colorScheme.onSurfaceVariant,
                                 ),
+                                child: Text(initials),
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -265,14 +285,18 @@ class MatchDetailPage extends ConsumerWidget {
                                     ),
                                   ),
                                   const SizedBox(height: 2),
-                                  Text(
-                                    isPaid ? 'Pagado' : 'Pendiente de pago',
+                                  AnimatedDefaultTextStyle(
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeOutCubic,
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: isPaid
                                           ? colorScheme.primary
                                           : colorScheme.tertiary,
                                       fontWeight: FontWeight.w600,
+                                    ),
+                                    child: Text(
+                                      isPaid ? 'Pagado' : 'Pendiente de pago',
                                     ),
                                   ),
                                 ],
@@ -285,13 +309,25 @@ class MatchDetailPage extends ConsumerWidget {
                                     _togglePayment(ref, match, playerId),
                               )
                             else
-                              Icon(
-                                isPaid
-                                    ? Icons.check_circle
-                                    : Icons.hourglass_bottom,
-                                color: isPaid
-                                    ? colorScheme.primary
-                                    : colorScheme.tertiary,
+                              AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 250),
+                                transitionBuilder: (child, animation) =>
+                                    ScaleTransition(
+                                  scale: animation,
+                                  child: FadeTransition(
+                                    opacity: animation,
+                                    child: child,
+                                  ),
+                                ),
+                                child: Icon(
+                                  isPaid
+                                      ? Icons.check_circle
+                                      : Icons.hourglass_bottom,
+                                  key: ValueKey(isPaid),
+                                  color: isPaid
+                                      ? colorScheme.primary
+                                      : colorScheme.tertiary,
+                                ),
                               ),
                           ],
                         ),

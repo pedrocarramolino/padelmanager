@@ -298,12 +298,17 @@ class _MatchCard extends StatelessWidget {
                   Icon(Icons.payments_outlined, size: 18, color: progressColor),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 8,
-                      borderRadius: BorderRadius.circular(20),
-                      valueColor: AlwaysStoppedAnimation(progressColor),
-                      backgroundColor: colorScheme.surfaceContainerHighest,
+                    child: TweenAnimationBuilder<double>(
+                      duration: const Duration(milliseconds: 350),
+                      curve: Curves.easeOutCubic,
+                      tween: Tween(begin: progress, end: progress),
+                      builder: (context, value, _) => LinearProgressIndicator(
+                        value: value,
+                        minHeight: 8,
+                        borderRadius: BorderRadius.circular(20),
+                        valueColor: AlwaysStoppedAnimation(progressColor),
+                        backgroundColor: colorScheme.surfaceContainerHighest,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
