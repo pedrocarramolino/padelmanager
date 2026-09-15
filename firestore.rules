@@ -30,7 +30,13 @@ service cloud.firestore {
     match /players/{playerId} {
       allow read: if signedIn();
       allow create: if isAdmin() || (signedIn() && request.auth.uid == playerId);
-      allow update: if isAdmin() || (signedIn() && request.auth.uid == playerId);
+      // El propio dueño no puede tocar 'userId': ese campo enlaza la ficha
+      // con users/{uid}, y el flujo de borrado del admin confía en él para
+      // decidir qué cuenta eliminar. Si se pudiera cambiar, un jugador
+      // podría desviar el borrado hacia la cuenta de otra persona.
+      allow update: if isAdmin() ||
+        (signedIn() && request.auth.uid == playerId &&
+          request.resource.data.userId == resource.data.userId);
       allow delete: if isAdmin();
     }
 

@@ -131,6 +131,37 @@ describe('usuario autenticado sin rol admin', () => {
     await assertFails(asUser().doc(`players/${USER_UID}`).delete());
   });
 
+  it('no puede cambiar el userId de su propia ficha de jugador', async () => {
+    // El admin borra la cuenta users/{userId} vinculada a un jugador al
+    // eliminarlo; si el dueño pudiera reapuntar userId a otra persona,
+    // conseguiría que el admin borrase por error la cuenta de otro.
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await context
+        .firestore()
+        .doc(`players/${USER_UID}`)
+        .set({ name: 'Yo', userId: USER_UID });
+    });
+    await assertFails(
+      asUser()
+        .doc(`players/${USER_UID}`)
+        .update({ userId: OTHER_UID }),
+    );
+  });
+
+  it('puede seguir editando otros campos si no toca userId', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await context
+        .firestore()
+        .doc(`players/${USER_UID}`)
+        .set({ name: 'Yo', userId: USER_UID });
+    });
+    await assertSucceeds(
+      asUser()
+        .doc(`players/${USER_UID}`)
+        .update({ name: 'Actualizado', userId: USER_UID }),
+    );
+  });
+
   it('puede leer su propio perfil', async () => {
     await assertSucceeds(asUser().doc(`users/${USER_UID}`).get());
   });
