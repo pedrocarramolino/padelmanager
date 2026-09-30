@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/image_url.dart';
 import '../../../core/platform/hard_reload.dart';
 import '../../../core/providers.dart';
 import '../../../core/theme_provider.dart';
@@ -50,7 +51,9 @@ class ProfilePage extends ConsumerWidget {
                           alpha: 0.2,
                         ),
                         backgroundImage: photoUrl.isNotEmpty
-                            ? NetworkImage(photoUrl)
+                            ? NetworkImage(
+                                thumbnailUrl(photoUrl, logicalSize: 92),
+                              )
                             : null,
                         child: photoUrl.isEmpty
                             ? Icon(

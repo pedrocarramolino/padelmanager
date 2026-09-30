@@ -14,12 +14,16 @@ class HomeShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.listen(myUpcomingMatchesProvider, (previous, next) {
-      final matches = next.valueOrNull;
-      if (matches != null) {
-        MatchReminderService.instance.syncReminders(matches);
-      }
-    });
+    // Solo donde hay avisos locales (Android/iOS nativo): en la web este
+    // listener sería una consulta sin límite abierta para nada.
+    if (MatchReminderService.isSupported) {
+      ref.listen(myUpcomingMatchesProvider, (previous, next) {
+        final matches = next.valueOrNull;
+        if (matches != null) {
+          MatchReminderService.instance.syncReminders(matches);
+        }
+      });
+    }
 
     return Scaffold(
       body: Column(

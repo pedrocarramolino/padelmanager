@@ -31,9 +31,17 @@ class _CreateMatchPageState extends ConsumerState<CreateMatchPage> {
   bool loading = false;
   bool get isEditing => widget.match != null;
 
+  // Creados una sola vez: si se crearan en build, cada setState (marcar un
+  // jugador, escribir en el buscador, cambiar la fecha...) cancelaría y
+  // reabriría los listeners de Firestore.
+  late final Stream<List<PlayerModel>> _playersStream;
+  late final Stream<List<ClubModel>> _clubsStream;
+
   @override
   void initState() {
     super.initState();
+    _playersStream = ref.read(playerRepositoryProvider).getPlayers();
+    _clubsStream = ref.read(clubRepositoryProvider).getClubs();
     final match = widget.match;
     if (match == null) return;
     courtController.text = match.courtNumber;
@@ -98,9 +106,7 @@ class _CreateMatchPageState extends ConsumerState<CreateMatchPage> {
   Future<void> saveMatch() async {
     if (!ref.read(isAdminProvider)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No tienes permisos para crear partidos'),
-        ),
+        const SnackBar(content: Text('No tienes permisos para crear partidos')),
       );
       return;
     }
@@ -189,7 +195,7 @@ class _CreateMatchPageState extends ConsumerState<CreateMatchPage> {
         title: Text(isEditing ? 'Editar partido' : 'Crear partido'),
       ),
       body: StreamBuilder<List<PlayerModel>>(
-        stream: ref.watch(playerRepositoryProvider).getPlayers(),
+        stream: _playersStream,
         builder: (context, playerSnapshot) {
           if (playerSnapshot.hasError) {
             return ErrorState(error: playerSnapshot.error);
@@ -209,7 +215,7 @@ class _CreateMatchPageState extends ConsumerState<CreateMatchPage> {
                 child: Column(
                   children: [
                     StreamBuilder<List<ClubModel>>(
-                      stream: ref.watch(clubRepositoryProvider).getClubs(),
+                      stream: _clubsStream,
                       builder: (context, clubSnapshot) {
                         if (clubSnapshot.hasError) {
                           return Text(
@@ -270,7 +276,9 @@ class _CreateMatchPageState extends ConsumerState<CreateMatchPage> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -414,10 +422,7 @@ class _PlayerPicker extends StatelessWidget {
         Row(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 5,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: atLimit
                     ? colorScheme.primaryContainer

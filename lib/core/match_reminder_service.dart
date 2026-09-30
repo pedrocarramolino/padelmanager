@@ -20,7 +20,7 @@ class MatchReminderService {
   final _plugin = FlutterLocalNotificationsPlugin();
   bool _initialized = false;
 
-  bool get _supported =>
+  static bool get isSupported =>
       !kIsWeb &&
       (defaultTargetPlatform == TargetPlatform.android ||
           defaultTargetPlatform == TargetPlatform.iOS);
@@ -88,13 +88,12 @@ class MatchReminderService {
   /// correspondan: partido pasado, borrado, o el usuario ya no está
   /// entre los jugadores.
   Future<void> syncReminders(List<MatchModel> myUpcomingMatches) async {
-    if (!_supported) return;
+    if (!isSupported) return;
     await _ensureInitialized();
 
     final prefs = await SharedPreferences.getInstance();
-    final previouslyScheduled = (
-      prefs.getStringList(_scheduledIdsKey) ?? const <String>[]
-    ).toSet();
+    final previouslyScheduled =
+        (prefs.getStringList(_scheduledIdsKey) ?? const <String>[]).toSet();
 
     final now = DateTime.now();
     final relevant = myUpcomingMatches.where((match) {

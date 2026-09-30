@@ -18,118 +18,124 @@ final _upcomingLimitProvider = StateProvider.autoDispose<int>(
   (ref) => _upcomingPageSize,
 );
 
+// Los listeners viven en providers (no en StreamBuilders creados dentro de
+// build) para que una reconstrucción de la página no los cancele y
+// reabra. La clave es el día: solo cambia al pasar la medianoche.
+final _upcomingMatchesProvider = StreamProvider.autoDispose
+    .family<List<MatchModel>, DateTime>((ref, today) {
+      final limit = ref.watch(_upcomingLimitProvider);
+      return ref
+          .watch(matchRepositoryProvider)
+          .getUpcomingMatches(from: today, limit: limit);
+    });
+
+// Sin límite: hace falta ver el histórico completo para saber cuáles
+// siguen pendientes de pago.
+final _playedMatchesProvider = StreamProvider.autoDispose
+    .family<List<MatchModel>, DateTime>((ref, today) {
+      return ref.watch(matchRepositoryProvider).getPlayedMatches(before: today);
+    });
+
 class MatchesPage extends ConsumerWidget {
   const MatchesPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final repository = ref.watch(matchRepositoryProvider);
     final isAdmin = ref.watch(isAdminProvider);
     final upcomingLimit = ref.watch(_upcomingLimitProvider);
 
     final today = DateTime.now();
     final todayOnly = DateTime(today.year, today.month, today.day);
 
+    final upcomingAsync = ref.watch(_upcomingMatchesProvider(todayOnly));
+    final playedAsync = ref.watch(_playedMatchesProvider(todayOnly));
+
     return Scaffold(
       appBar: AppBar(title: const Text('Partidos')),
-      body: StreamBuilder<List<MatchModel>>(
-        stream: repository.getUpcomingMatches(
-          from: todayOnly,
-          limit: upcomingLimit,
-        ),
-        builder: (context, upcomingSnapshot) {
-          return StreamBuilder<List<MatchModel>>(
-            // Sin límite: hace falta ver el histórico completo para
-            // saber cuáles siguen pendientes de pago.
-            stream: repository.getPlayedMatches(before: todayOnly),
-            builder: (context, playedSnapshot) {
-              if (upcomingSnapshot.hasError) {
-                return ErrorState(error: upcomingSnapshot.error);
-              }
-              if (playedSnapshot.hasError) {
-                return ErrorState(error: playedSnapshot.error);
-              }
-              if (!upcomingSnapshot.hasData || !playedSnapshot.hasData) {
-                return const SkeletonList(
-                  itemBuilder: _buildMatchSkeleton,
-                );
-              }
+      body: Builder(
+        builder: (context) {
+          if (upcomingAsync.hasError) {
+            return ErrorState(error: upcomingAsync.error);
+          }
+          if (playedAsync.hasError) {
+            return ErrorState(error: playedAsync.error);
+          }
+          // valueOrNull conserva los datos anteriores mientras se
+          // recarga (p. ej. al pulsar "Cargar más"): sin parpadeo.
+          final upcomingRaw = upcomingAsync.valueOrNull;
+          final playedRaw = playedAsync.valueOrNull;
+          if (upcomingRaw == null || playedRaw == null) {
+            return const SkeletonList(itemBuilder: _buildMatchSkeleton);
+          }
 
-              // Un partido con todos los pagos completados solo deja de
-              // tener sentido en la lista cuando YA se ha jugado; uno
-              // próximo se sigue mostrando aunque esté todo pagado,
-              // porque el partido en sí todavía no ha pasado.
-              bool isFullyPaid(MatchModel m) =>
-                  m.players.isNotEmpty &&
-                  m.players.every((p) => m.payments[p['id']] ?? false);
+          // Un partido con todos los pagos completados solo deja de
+          // tener sentido en la lista cuando YA se ha jugado; uno
+          // próximo se sigue mostrando aunque esté todo pagado,
+          // porque el partido en sí todavía no ha pasado.
+          bool isFullyPaid(MatchModel m) =>
+              m.players.isNotEmpty &&
+              m.players.every((p) => m.payments[p['id']] ?? false);
 
-              final upcomingRaw = upcomingSnapshot.data!;
-              final playedRaw = playedSnapshot.data!;
-              final upcoming = upcomingRaw;
+          final upcoming = upcomingRaw;
 
-              // Los partidos jugados pendientes de pago se muestran
-              // siempre todos; si no queda ninguno, se enseñan los
-              // últimos jugados aunque ya estén cobrados, para que la
-              // sección no se quede vacía.
-              final playedPending = playedRaw
-                  .where((m) => !isFullyPaid(m))
-                  .toList();
-              final played = playedPending.isNotEmpty
-                  ? playedPending
-                  : playedRaw.take(_playedFallbackCount).toList();
+          // Los partidos jugados pendientes de pago se muestran
+          // siempre todos; si no queda ninguno, se enseñan los
+          // últimos jugados aunque ya estén cobrados, para que la
+          // sección no se quede vacía.
+          final playedPending = playedRaw
+              .where((m) => !isFullyPaid(m))
+              .toList();
+          final played = playedPending.isNotEmpty
+              ? playedPending
+              : playedRaw.take(_playedFallbackCount).toList();
 
-              // Si Firestore devolvió tantos documentos como el límite
-              // pedido, probablemente haya más por cargar.
-              final hasMoreUpcoming = upcomingRaw.length >= upcomingLimit;
+          // Si Firestore devolvió tantos documentos como el límite
+          // pedido, probablemente haya más por cargar.
+          final hasMoreUpcoming = upcomingRaw.length >= upcomingLimit;
 
-              if (upcomingRaw.isEmpty && playedRaw.isEmpty) {
-                return _EmptyMatches(
-                  isAdmin: isAdmin,
-                  onCreate: () => _openCreateMatch(context),
-                );
-              }
+          if (upcomingRaw.isEmpty && playedRaw.isEmpty) {
+            return _EmptyMatches(
+              isAdmin: isAdmin,
+              onCreate: () => _openCreateMatch(context),
+            );
+          }
 
-              return ListView(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 96),
-                children: [
-                  if (upcoming.isNotEmpty || hasMoreUpcoming) ...[
-                    const _SectionHeader(
-                      icon: Icons.upcoming_outlined,
-                      title: 'Próximos',
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 96),
+            children: [
+              if (upcoming.isNotEmpty || hasMoreUpcoming) ...[
+                const _SectionHeader(
+                  icon: Icons.upcoming_outlined,
+                  title: 'Próximos',
+                ),
+                ...upcoming.map(
+                  (match) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _MatchCard(match: match),
+                  ),
+                ),
+                if (hasMoreUpcoming)
+                  _LoadMoreButton(
+                    onPressed: () =>
+                        ref.read(_upcomingLimitProvider.notifier).state +=
+                            _upcomingPageSize,
+                  ),
+              ],
+              if (played.isNotEmpty) ...[
+                const _SectionHeader(icon: Icons.history, title: 'Jugados'),
+                ...played.map(
+                  (match) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Opacity(
+                      // Los que aún deben algo se ven a toda
+                      // opacidad: siguen necesitando gestión.
+                      opacity: isFullyPaid(match) ? 0.65 : 1,
+                      child: _MatchCard(match: match),
                     ),
-                    ...upcoming.map(
-                      (match) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _MatchCard(match: match),
-                      ),
-                    ),
-                    if (hasMoreUpcoming)
-                      _LoadMoreButton(
-                        onPressed: () => ref
-                            .read(_upcomingLimitProvider.notifier)
-                            .state += _upcomingPageSize,
-                      ),
-                  ],
-                  if (played.isNotEmpty) ...[
-                    const _SectionHeader(
-                      icon: Icons.history,
-                      title: 'Jugados',
-                    ),
-                    ...played.map(
-                      (match) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Opacity(
-                          // Los que aún deben algo se ven a toda
-                          // opacidad: siguen necesitando gestión.
-                          opacity: isFullyPaid(match) ? 0.65 : 1,
-                          child: _MatchCard(match: match),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              );
-            },
+                  ),
+                ),
+              ],
+            ],
           );
         },
       ),

@@ -15,6 +15,22 @@ final _playersLimitProvider = StateProvider.autoDispose<int>(
   (ref) => _pageSize,
 );
 
+// Mientras se busca, se trae la colección completa: la búsqueda es por
+// subcadena en el cliente y no tendría sentido limitarla a la página
+// cargada. El select hace que solo cambie al empezar/terminar de buscar,
+// no con cada tecla.
+final _playersEffectiveLimitProvider = Provider.autoDispose<int?>((ref) {
+  final isSearching = ref.watch(
+    _playerSearchProvider.select((text) => text.trim().isNotEmpty),
+  );
+  return isSearching ? null : ref.watch(_playersLimitProvider);
+});
+
+final _playersProvider = StreamProvider.autoDispose<List<PlayerModel>>((ref) {
+  final limit = ref.watch(_playersEffectiveLimitProvider);
+  return ref.watch(playerRepositoryProvider).getPlayers(limit: limit);
+});
+
 class PlayersPage extends ConsumerWidget {
   const PlayersPage({super.key});
   Future<void> _confirmDelete(
@@ -105,23 +121,22 @@ class PlayersPage extends ConsumerWidget {
     final repository = ref.watch(playerRepositoryProvider);
     final isAdmin = ref.watch(isAdminProvider);
     final searchText = ref.watch(_playerSearchProvider).trim();
-    // Mientras se busca, se trae la colección completa: la búsqueda es
-    // por subcadena en el cliente y no tendría sentido limitarla a la
-    // página que esté cargada en ese momento.
     final isSearching = searchText.isNotEmpty;
     final limit = ref.watch(_playersLimitProvider);
+    final playersAsync = ref.watch(_playersProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('Jugadores')),
-      body: StreamBuilder<List<PlayerModel>>(
-        stream: repository.getPlayers(limit: isSearching ? null : limit),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return ErrorState(error: snapshot.error);
+      body: Builder(
+        builder: (context) {
+          if (playersAsync.hasError) {
+            return ErrorState(error: playersAsync.error);
           }
-          if (!snapshot.hasData) {
+          // valueOrNull conserva la lista anterior mientras se recarga
+          // (al empezar a buscar o al pulsar "Cargar más"): sin parpadeo.
+          final players = playersAsync.valueOrNull;
+          if (players == null) {
             return const SkeletonList(itemBuilder: _buildPlayerSkeleton);
           }
-          final players = snapshot.data!;
           if (players.isEmpty && !isSearching) {
             return _EmptyPlayers(
               isAdmin: isAdmin,

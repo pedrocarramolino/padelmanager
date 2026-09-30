@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/image_url.dart';
 import '../../data/player_model.dart';
 
 /// Avatar circular con la foto del jugador o, si no tiene, sus
@@ -38,7 +39,7 @@ class PlayerAvatar extends StatelessWidget {
       radius: radius,
       backgroundColor: _color,
       backgroundImage: player.photoUrl.isNotEmpty
-          ? NetworkImage(player.photoUrl)
+          ? NetworkImage(thumbnailUrl(player.photoUrl, logicalSize: radius * 2))
           : null,
       child: player.photoUrl.isNotEmpty
           ? null

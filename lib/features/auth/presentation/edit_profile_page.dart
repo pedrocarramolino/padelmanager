@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/image_url.dart';
 import '../../../core/validators.dart';
 import '../data/auth_service.dart';
 import 'dart:typed_data';
@@ -51,6 +52,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Future<void> pickImage() async {
     final XFile? file = await picker.pickImage(
       source: ImageSource.gallery,
+      maxWidth: 1024,
+      maxHeight: 1024,
       imageQuality: 80,
     );
     if (file == null) return;
@@ -90,6 +93,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       });
     }
   }
+
   @override
   void dispose() {
     name.dispose();
@@ -97,6 +101,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     phone.dispose();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     if (loading) {
@@ -109,186 +114,188 @@ class _EditProfilePageState extends State<EditProfilePage> {
         child: Form(
           key: formKey,
           child: Column(
-          children: [
-            Semantics(
-              button: true,
-              label: 'Cambiar foto de perfil',
-              child: GestureDetector(
-                onTap: pickImage,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    CircleAvatar(
-                      radius: 55,
-                      backgroundImage: imageBytes != null
-                          ? MemoryImage(imageBytes!)
-                          : (photoUrl.isNotEmpty
-                                ? NetworkImage(photoUrl)
-                                : null),
-                      child: imageBytes == null && photoUrl.isEmpty
-                          ? const Icon(Icons.camera_alt, size: 35)
-                          : null,
-                    ),
-                    if (imageBytes != null || photoUrl.isNotEmpty)
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Theme.of(context).colorScheme.primary,
-                            border: Border.all(
-                              color: Theme.of(context).colorScheme.surface,
-                              width: 2,
+            children: [
+              Semantics(
+                button: true,
+                label: 'Cambiar foto de perfil',
+                child: GestureDetector(
+                  onTap: pickImage,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      CircleAvatar(
+                        radius: 55,
+                        backgroundImage: imageBytes != null
+                            ? MemoryImage(imageBytes!)
+                            : (photoUrl.isNotEmpty
+                                  ? NetworkImage(
+                                      thumbnailUrl(photoUrl, logicalSize: 110),
+                                    )
+                                  : null),
+                        child: imageBytes == null && photoUrl.isEmpty
+                            ? const Icon(Icons.camera_alt, size: 35)
+                            : null,
+                      ),
+                      if (imageBytes != null || photoUrl.isNotEmpty)
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Theme.of(context).colorScheme.primary,
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.surface,
+                                width: 2,
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.camera_alt,
+                              size: 16,
+                              color: Theme.of(context).colorScheme.onPrimary,
                             ),
                           ),
-                          child: Icon(
-                            Icons.camera_alt,
-                            size: 16,
-                            color: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 25),
+              TextFormField(
+                controller: name,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                validator: (v) => Validators.requiredField(v, 'El nombre'),
+                decoration: const InputDecoration(
+                  labelText: 'Nombre',
+                  prefixIcon: Icon(Icons.person),
+                ),
+              ),
+
+              const SizedBox(height: 15),
+
+              TextFormField(
+                controller: surname,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                validator: (v) => Validators.requiredField(v, 'Los apellidos'),
+                decoration: const InputDecoration(
+                  labelText: 'Apellidos',
+                  prefixIcon: Icon(Icons.badge),
+                ),
+              ),
+              const SizedBox(height: 15),
+              TextFormField(
+                controller: phone,
+                keyboardType: TextInputType.phone,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                validator: Validators.phone,
+                decoration: const InputDecoration(
+                  labelText: 'Teléfono',
+                  prefixIcon: Icon(Icons.phone),
+                ),
+              ),
+              const SizedBox(height: 25),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Nivel',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          IconButton.filled(
+                            tooltip: 'Bajar nivel',
+                            onPressed: level > 1.0
+                                ? () {
+                                    setState(() {
+                                      level = (level - 0.5).clamp(1.0, 7.0);
+                                    });
+                                  }
+                                : null,
+                            icon: const Icon(Icons.remove),
                           ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 25),
-            TextFormField(
-              controller: name,
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              validator: (v) => Validators.requiredField(v, 'El nombre'),
-              decoration: const InputDecoration(
-                labelText: 'Nombre',
-                prefixIcon: Icon(Icons.person),
-              ),
-            ),
-
-            const SizedBox(height: 15),
-
-            TextFormField(
-              controller: surname,
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              validator: (v) => Validators.requiredField(v, 'Los apellidos'),
-              decoration: const InputDecoration(
-                labelText: 'Apellidos',
-                prefixIcon: Icon(Icons.badge),
-              ),
-            ),
-            const SizedBox(height: 15),
-            TextFormField(
-              controller: phone,
-              keyboardType: TextInputType.phone,
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              validator: Validators.phone,
-              decoration: const InputDecoration(
-                labelText: 'Teléfono',
-                prefixIcon: Icon(Icons.phone),
-              ),
-            ),
-            const SizedBox(height: 25),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    const Text(
-                      'Nivel',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        IconButton.filled(
-                          tooltip: 'Bajar nivel',
-                          onPressed: level > 1.0
-                              ? () {
-                                  setState(() {
-                                    level = (level - 0.5).clamp(1.0, 7.0);
-                                  });
-                                }
-                              : null,
-                          icon: const Icon(Icons.remove),
-                        ),
-                        const SizedBox(width: 30),
-                        Text(
-                          level.toStringAsFixed(1),
-                          style: const TextStyle(
-                            fontSize: 38,
-                            fontWeight: FontWeight.bold,
+                          const SizedBox(width: 30),
+                          Text(
+                            level.toStringAsFixed(1),
+                            style: const TextStyle(
+                              fontSize: 38,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 30),
-                        IconButton.filled(
-                          tooltip: 'Subir nivel',
-                          onPressed: level < 7.0
-                              ? () {
-                                  setState(() {
-                                    level = (level + 0.5).clamp(1.0, 7.0);
-                                  });
-                                }
-                              : null,
-                          icon: const Icon(Icons.add),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Pulsa los botones para modificar tu nivel',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          const SizedBox(width: 30),
+                          IconButton.filled(
+                            tooltip: 'Subir nivel',
+                            onPressed: level < 7.0
+                                ? () {
+                                    setState(() {
+                                      level = (level + 0.5).clamp(1.0, 7.0);
+                                    });
+                                  }
+                                : null,
+                            icon: const Icon(Icons.add),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 12),
+                      Text(
+                        'Pulsa los botones para modificar tu nivel',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 15),
-            DropdownButtonFormField<String>(
-              initialValue: position,
-              decoration: const InputDecoration(
-                labelText: 'Posición',
-                prefixIcon: Icon(Icons.sports_tennis),
-              ),
-              items: const [
-                DropdownMenuItem(value: 'Derecha', child: Text('Derecha')),
-                DropdownMenuItem(value: 'Revés', child: Text('Revés')),
-                DropdownMenuItem(
-                  value: 'Indiferente',
-                  child: Text('Indiferente'),
+              const SizedBox(height: 15),
+              DropdownButtonFormField<String>(
+                initialValue: position,
+                decoration: const InputDecoration(
+                  labelText: 'Posición',
+                  prefixIcon: Icon(Icons.sports_tennis),
                 ),
-              ],
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    position = value;
-                  });
-                }
-              },
-            ),
-
-            const SizedBox(height: 30),
-
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: saving ? null : save,
-                icon: saving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.save),
-                label: const Text("Guardar cambios"),
+                items: const [
+                  DropdownMenuItem(value: 'Derecha', child: Text('Derecha')),
+                  DropdownMenuItem(value: 'Revés', child: Text('Revés')),
+                  DropdownMenuItem(
+                    value: 'Indiferente',
+                    child: Text('Indiferente'),
+                  ),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      position = value;
+                    });
+                  }
+                },
               ),
-            ),
-          ],
+
+              const SizedBox(height: 30),
+
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: saving ? null : save,
+                  icon: saving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.save),
+                  label: const Text("Guardar cambios"),
+                ),
+              ),
+            ],
           ),
         ),
       ),

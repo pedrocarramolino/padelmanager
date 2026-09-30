@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
@@ -14,6 +15,15 @@ void main() async {
   usePathUrlStrategy();
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // En la web Firestore solo cachea en memoria por defecto: cada apertura de
+  // la PWA empezaba de cero. Con caché en IndexedDB los datos aparecen al
+  // instante y luego se sincronizan. El gestor multipestaña evita conflictos
+  // si la app está abierta a la vez en la PWA y en una pestaña del navegador.
+  // En Android/iOS la persistencia ya viene activada; esto no cambia nada.
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+    webPersistentTabManager: WebPersistentMultipleTabManager(),
+  );
   await initializeDateFormatting('es');
   final prefs = await SharedPreferences.getInstance();
   runApp(
@@ -49,8 +59,12 @@ ThemeData _buildTheme(Brightness brightness) {
   final background = isDark ? const Color(0xFF0F1712) : const Color(0xFFF6F8F6);
   final surface = isDark ? const Color(0xFF17211C) : Colors.white;
   final onSurface = isDark ? const Color(0xFFE3EDE7) : const Color(0xFF163028);
-  final onSurfaceVariant = isDark ? const Color(0xFFA9BAB2) : const Color(0xFF56675F);
-  final borderColor = isDark ? const Color(0xFF2A3A32) : const Color(0xFFE5ECE7);
+  final onSurfaceVariant = isDark
+      ? const Color(0xFFA9BAB2)
+      : const Color(0xFF56675F);
+  final borderColor = isDark
+      ? const Color(0xFF2A3A32)
+      : const Color(0xFFE5ECE7);
   final inputFill = isDark ? const Color(0xFF1C2822) : Colors.white;
   final colorScheme = ColorScheme.fromSeed(
     seedColor: const Color(0xFF009966),
@@ -65,9 +79,7 @@ ThemeData _buildTheme(Brightness brightness) {
       isDark ? ThemeData.dark().textTheme : ThemeData.light().textTheme,
     ).apply(bodyColor: onSurface, displayColor: onSurface),
     scaffoldBackgroundColor: background,
-    colorScheme: colorScheme.copyWith(
-      onSurfaceVariant: onSurfaceVariant,
-    ),
+    colorScheme: colorScheme.copyWith(onSurfaceVariant: onSurfaceVariant),
     pageTransitionsTheme: const PageTransitionsTheme(
       builders: {
         TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
@@ -101,10 +113,7 @@ ThemeData _buildTheme(Brightness brightness) {
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: inputFill,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 18,
-        vertical: 18,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -119,17 +128,13 @@ ThemeData _buildTheme(Brightness brightness) {
       style: FilledButton.styleFrom(
         elevation: 2,
         minimumSize: const Size.fromHeight(56),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         minimumSize: const Size.fromHeight(56),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
@@ -149,13 +154,8 @@ ThemeData _buildTheme(Brightness brightness) {
     ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
     ),
-    dividerTheme: DividerThemeData(
-      thickness: 1,
-      color: borderColor,
-    ),
+    dividerTheme: DividerThemeData(thickness: 1, color: borderColor),
   );
 }

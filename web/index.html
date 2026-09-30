@@ -21,6 +21,14 @@
     <link rel="icon" type="image/png" href="favicon.png">
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
+    <!-- Servidores a los que la app se conecta nada más arrancar (motor
+         gráfico y SDK de Firebase, fuentes, Firestore): abrir la conexión
+         ya ahorra un viaje de red en cada uno. gstatic va dos veces porque
+         los scripts se piden sin CORS y el .wasm con CORS. -->
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
   </head>
   <body>
     <div id="loading">
