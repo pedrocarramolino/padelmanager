@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/image_url.dart';
+import '../../../core/providers.dart';
 import '../../../core/validators.dart';
 import '../data/auth_service.dart';
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
 
-class EditProfilePage extends StatefulWidget {
+class EditProfilePage extends ConsumerStatefulWidget {
   const EditProfilePage({super.key});
 
   @override
-  State<EditProfilePage> createState() => _EditProfilePageState();
+  ConsumerState<EditProfilePage> createState() => _EditProfilePageState();
 }
 
-class _EditProfilePageState extends State<EditProfilePage> {
+class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   final formKey = GlobalKey<FormState>();
   final auth = AuthService();
   final name = TextEditingController();
@@ -30,21 +32,33 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    loadUser();
+    // Normalmente se llega desde Perfil, que ya tiene la ficha cargada en
+    // vivo: se rellena al instante en vez de esperar una lectura al
+    // servidor. Solo se va a la red si no está (p. ej. entrando directo
+    // por URL a /perfil/editar).
+    final cached = ref.read(myPlayerDataProvider).valueOrNull;
+    if (cached != null) {
+      _fill(cached);
+      loading = false;
+    } else {
+      loadUser();
+    }
+  }
+
+  void _fill(Map<String, dynamic> data) {
+    name.text = data['name'] ?? '';
+    surname.text = data['surname'] ?? '';
+    phone.text = data['phone'] ?? '';
+    level = (data['level'] as num?)?.toDouble() ?? 3.0;
+    position = data['position'] ?? 'Derecha';
+    photoUrl = data['photoUrl'] ?? '';
   }
 
   Future<void> loadUser() async {
     final data = await auth.getCurrentPlayerData();
-    if (data != null) {
-      name.text = data['name'] ?? '';
-      surname.text = data['surname'] ?? '';
-      phone.text = data['phone'] ?? '';
-      level = (data['level'] as num?)?.toDouble() ?? 3.0;
-      position = data['position'] ?? 'Derecha';
-      photoUrl = data['photoUrl'] ?? '';
-    }
-
+    if (!mounted) return;
     setState(() {
+      if (data != null) _fill(data);
       loading = false;
     });
   }
